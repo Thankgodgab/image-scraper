@@ -6,13 +6,9 @@ const { URL } = require("url");
 const path = require("path");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-
-// Serve static files from the client app
-app.use(express.static(path.join(__dirname, "client/dist")));
 
 // Endpoint to scrape images from a page
 app.post("/api/scrape", async (req, res) => {
@@ -36,7 +32,6 @@ app.post("/api/scrape", async (req, res) => {
       if (imgSrc) {
         try {
           const absoluteUrl = new URL(imgSrc, url).href;
-          // Simple filter to avoid tracking pixels or tiny icons if needed, currently passing all
           images.push(absoluteUrl);
         } catch (e) {
           // Ignore invalid URLs
@@ -44,9 +39,7 @@ app.post("/api/scrape", async (req, res) => {
       }
     });
 
-    // Unique URLs
     const uniqueImages = [...new Set(images)];
-
     res.json({ images: uniqueImages });
   } catch (error) {
     console.error("Scrape error:", error.message);
@@ -56,7 +49,7 @@ app.post("/api/scrape", async (req, res) => {
   }
 });
 
-// Proxy endpoint to fetch image data (bypasses CORS)
+// Proxy endpoint to fetch image data
 app.get("/api/proxy-image", async (req, res) => {
   const imgUrl = req.query.url;
   if (!imgUrl) return res.status(400).send("No URL provided");
@@ -74,16 +67,5 @@ app.get("/api/proxy-image", async (req, res) => {
     res.status(500).send("Failed to fetch image");
   }
 });
-
-// For any other request, serve the index.html
-app.get(/.*/, (req, res) => {
-  res.sendFile(path.join(__dirname, "client/dist/index.html"));
-});
-
-if (process.env.NODE_ENV !== "production") {
-  app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
-}
 
 module.exports = app;
